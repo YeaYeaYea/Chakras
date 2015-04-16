@@ -1,0 +1,1647 @@
+//---------------------------ChakrasTimeCode----------------------------------//
+//----------------------------------------------------------------------------//
+//--215 LED custom backing for milk plexi fiber optic art installation--------//
+//----------------------------------------------------------------------------//
+//--3.5 meters of WS2812B 60-LED/Meter pololu strip light---------------------//
+//----------------------------------------------------------------------------//
+//--Arduino Uno 1.6.2---------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//--Based in the FastLED3.1 library from  Mark Kriegsmann---------------------//
+//----------------------------------------------------------------------------//
+//--Setup with 'meteorShower' by Thomas Eldredge and variations from----------// 
+//--Jon Burroughs and Peter Routon--------------------------------------------//
+//--and Mark Kriegsmann's 'timecodePerformance'-------------------------------// 
+//----------------------------------------------------------------------------//
+
+
+#include "FastLED.h"
+ 
+#if FASTLED_VERSION < 3001000
+#error "Requires FastLED 3.1 or later; check github for latest code."
+#endif
+ 
+#define DATA_PIN    12
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
+#define NUM_LEDS    215
+CRGB leds[NUM_LEDS];
+ 
+#define BRIGHTNESS          96
+#define FRAMES_PER_SECOND  120
+ 
+uint8_t hue = 32;
+byte idex = 255;
+byte meteorLength = 18;
+
+void setup() {
+  delay(3000); // 3 second delay for recovery
+  
+  // tell FastLED about the LED strip configuration
+  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+ 
+  // set master brightness control
+  FastLED.setBrightness(BRIGHTNESS);
+  
+  RestartPerformance();
+  Serial.begin(57600);
+}
+ 
+ 
+uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+  
+uint32_t gTimeCodeBase = 0;
+uint32_t gTimeCode = 0;
+uint32_t gLastTimeCodeDoneAt = 0;
+uint32_t gLastTimeCodeDoneFrom = 0;
+ 
+#define TC(HOURS,MINUTES,SECONDS) \
+  ((uint32_t)(((uint32_t)((HOURS)*(uint32_t)(3600000))) + \
+  ((uint32_t)((MINUTES)*(uint32_t)(60000))) + \
+  ((uint32_t)((SECONDS)*(uint32_t)(1000)))))
+ 
+ 
+#define AT(HOURS,MINUTES,SECONDS) if( atTC(TC(HOURS,MINUTES,SECONDS)) )
+#define FROM(HOURS,MINUTES,SECONDS) if( fromTC(TC(HOURS,MINUTES,SECONDS)) )
+ 
+static bool atTC( uint32_t tc)
+{
+  bool maybe = false;
+  if( gTimeCode >= tc) {
+    if( gLastTimeCodeDoneAt < tc) {
+      maybe = true;
+      gLastTimeCodeDoneAt = tc;
+    }
+  }
+  return maybe;
+}
+ 
+static bool fromTC( uint32_t tc)
+{
+  bool maybe = false;
+  if( gTimeCode >= tc) {
+    if( gLastTimeCodeDoneFrom <= tc) {
+      maybe = true;
+      gLastTimeCodeDoneFrom = tc;
+    }
+  }
+  return maybe;
+}
+ 
+//--------------------Performance Order---------
+
+void Performance()
+{
+    AT (0,0,00.001) { FastLED.setBrightness(BRIGHTNESS); } 
+    FROM (0,0,00.100) {spiral1();    }
+    FROM (0,0,02.100) {spiral2();    }
+    FROM (0,0,04.600) {spiral3();    }
+    FROM (0,0,07.200) {spiral4();    }
+    FROM (0,0,09.700) {up5();        }
+    FROM (0,0,10.900) {down5();      }
+    FROM (0,0,11.800) {up5();        }
+    FROM (0,0,12.500) {chest6A();    }
+    FROM (0,0,14.000) {throat7();    }
+    FROM (0,0,15.000) {shoulder8A(); }
+    FROM (0,0,16.500) {shoulder8B(); }
+    FROM (0,0,20.000) {side9B();     }
+    FROM (0,0,23.800) {bottom10();   }
+    FROM (0,0,26.200) {red11();      }
+    FROM (0,0,30.000) {fadeToBlack();} 
+}
+
+//------------------Loop------------------------
+
+void loop()
+{
+     // Set the current timecode, based on when the performance started
+  gTimeCode = millis() - gTimeCodeBase;
+ 
+  Performance();
+ 
+  // send the 'leds' array out to the actual LED strip
+  FastLED.show();  
+  // insert a delay to keep the framerate modest
+  FastLED.delay(1000/FRAMES_PER_SECOND); 
+ 
+  // For demo purposes, restart the performance any time we read
+  // the letter "r" character from the serial port.  Type "r" into 
+  // the Arduino serial monitor and press return to restart the performance.
+  // In practice, you could have this check a 'restart' button, or something similar.
+  if( Serial.read() == 'r') RestartPerformance();
+ 
+}
+ 
+ 
+void RestartPerformance()
+{
+  gLastTimeCodeDoneAt = 0;
+  gLastTimeCodeDoneFrom = 0;
+  gTimeCodeBase = millis();
+}
+    
+//---------------------Events-----------//
+
+//-------------------------------------------------------------------spiral1--//
+void spiral1(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (0,17) * 3 );
+
+
+  // increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  }
+  
+//----------------------------
+switch ( idex ) {
+  case 0:
+  
+    leds[0] = CRGB(200,0,0); 
+ break;
+  case 1:
+    leds[0] = CRGB(200,0,0);    
+break;
+  case 2:
+    leds[0] = CRGB(200,0,0);    
+break;
+  case 3:
+    leds[0] = CRGB(200,0,0); 
+break;
+  case 4:
+    leds[0] = CRGB(200,0,0);    
+break;
+  case 5:
+    leds[0] = CRGB(200,0,0);     
+break;
+  case 6:
+    leds[0] = CRGB(200,0,0);   
+break;
+  case 7:
+    leds[0] = CRGB(200,0,0);    
+break;
+  case 8:
+    leds[0] = CRGB(200,0,0);
+break;
+  case 9:
+    leds[0] = CRGB(200,0,0);            
+break;
+  case 10:
+    leds[0] = CRGB(200,0,0);
+break;
+  case 11:
+    leds[0] = CRGB(150,0,0);     
+break;
+  case 12:
+    leds[0] = CRGB(100,0,0);    
+break;
+  case 13:
+    leds[0] = CRGB(60,0,0);     
+break;
+  case 14:
+    leds[0] = CRGB(20,0,0);    
+break;
+  case 15:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 16:
+    leds[0] = CRGB(0,0,0);   
+break;
+  case 17:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 18:
+    leds[0] = CRGB(0,0,0);    
+    
+break;
+ default:
+ leds[0] = CRGB::Black;
+ }
+ 
+ //---------------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}
+
+//-------------------------------------------------------------------spiral2--//
+void spiral2(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (18,30) * 3 );
+// increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  }
+  
+  
+//-------------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[18] = CRGB(200,0,0); 
+ break;
+  case 1:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 2:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 3:
+    leds[18] = CRGB(200,0,0); 
+break;
+  case 4:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 5:
+    leds[18] = CRGB(200,0,0);     
+break;
+  case 6:
+    leds[18] = CRGB(200,0,0);   
+break;
+  case 7:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 8:
+    leds[18] = CRGB(200,0,0);      
+break;
+  case 9:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 10:
+    leds[18] = CRGB(200,0,0);     
+break;
+  case 11:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 12:
+    leds[18] = CRGB(150,0,0); 
+break;
+  case 13:
+    leds[18] = CRGB(60,0,0);
+break;
+  case 14:
+    leds[18] = CRGB(20,0,0);
+break;
+  case 15:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 16:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 17:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[18] = CRGB(0,0,0);    
+break; 
+ default:
+ leds[18] = CRGB::Black;
+ }
+ 
+ //------------------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}
+ //-------------------------------------------------------------------spiral3-// 
+ void spiral3(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (31,47) * 3 );
+
+ // increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  }
+  
+//--------------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[31] = CRGB(200,100,0);
+break;
+  case 1:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 2:
+    leds[31] = CRGB(200,100,0);    
+break;
+  case 3:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 4:
+    leds[31] = CRGB(200,100,0);    
+break;
+  case 5:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 6:
+    leds[31] = CRGB(200,100,0);    
+break;
+  case 7:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 8:
+    leds[31] = CRGB(200,100,0);    
+break;
+  case 9:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 10:
+    leds[31] = CRGB(200,100,0);                
+break;
+  case 11:
+    leds[31] = CRGB(150,75,0);     
+break;
+  case 12:
+    leds[31] = CRGB(100,50,0);    
+break;
+  case 13:
+    leds[31] = CRGB(60,30,0);     
+break;
+  case 14:
+    leds[31] = CRGB(20,10,0);
+break;
+  case 15:
+    leds[31] = CRGB(0,0,0);     
+break;
+  case 16:
+    leds[31] = CRGB(0,0,0); 
+break;
+  case 17:
+    leds[31] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[31] = CRGB(0,0,0);    
+break;
+
+  default:
+    leds[31] = CRGB::Black;
+ }
+
+ 
+ //-------------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}
+
+//-------------------------------------------------------------------spiral4--// 
+ void spiral4(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (48,61) * 3 );
+ // increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+  if ( idex > meteorLength) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  }
+ 
+//-----------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[48] = CRGB(200,200,0);
+break;
+  case 1:
+    leds[48] = CRGB(200,200,0);     
+break;
+  case 2:
+    leds[48] = CRGB(200,200,0);    
+break;
+  case 3:
+    leds[48] = CRGB(200,200,0);                 
+break; 
+  case 4:
+    leds[48] = CRGB(200,200,0);    
+break;
+  case 5:
+    leds[48] = CRGB(200,200,0);    
+break;
+  case 6:
+    leds[48] = CRGB(200,200,0);     
+break;
+  case 7:
+    leds[48] = CRGB(200,200,0);       
+break;
+  case 8:
+    leds[48] = CRGB(200,200,0);
+break;
+  case 9:
+    leds[48] = CRGB(200,200,0);
+break;
+  case 10:
+    leds[48] = CRGB(150,150,0);
+break;
+  case 11:
+    leds[48] = CRGB(100,100,0);
+break;
+  case 12:
+    leds[48] = CRGB(60,60,0);
+break;
+  case 13:
+    leds[48] = CRGB(20,20,0);
+break;
+  case 14:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 15:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 16:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 17:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[48] = CRGB(0,0,0);
+    
+break;
+  default:
+    leds[48] = CRGB::Black;
+ }
+
+ 
+ //---------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}
+
+
+//-----------------------------------------------------------------------up5--// 
+ void up5(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (62,70) * 3 );
+
+ // increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  }
+ 
+//------------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[62] = CRGB(0,200,0);
+break;
+  case 1:
+    leds[62] = CRGB(0,200,0);     
+break;
+  case 2:
+    leds[62] = CRGB(0,0,0);    
+break;
+  case 3:
+    leds[62] = CRGB(0,0,0);                 
+break;
+  case 4:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 5:
+    leds[62] = CRGB(0,0,0);    
+break;
+  case 6:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 7:
+    leds[62] = CRGB(0,0,0);    
+break;
+  case 8:
+    leds[62] = CRGB(0,0,0);                     
+break;
+  case 9:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 10:
+    leds[62] = CRGB(0,0,0);    
+break;  
+  case 11:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 12:
+    leds[62] = CRGB(0,0,0);                     
+break;
+  case 13:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 14:
+    leds[62] = CRGB(0,0,0); 
+break;  
+  case 15:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 16:
+    leds[62] = CRGB(0,0,0);                     
+break;
+  case 17:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[62] = CRGB(0,0,0);
+    
+break;
+  default:
+    leds[62] = CRGB::Black;
+ }
+
+ 
+ //-------------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}
+//----------------------------------
+
+//---------------------------------------------------------------------down5--// 
+ void down5(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[0], &leds[1], (70) * 3 );
+
+ // increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+  
+ 
+//------------------------------
+ 
+switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[70] = CRGB(0,200,0);
+break;
+  case 1:
+    leds[70] = CRGB(0,200,0);     
+break;
+  case 2:
+    leds[70] = CRGB(0,0,0);    
+break;
+  case 3:
+    leds[70] = CRGB(0,0,0);                 
+break;
+  case 4:
+    leds[70] = CRGB(0,0,0);     
+break;
+  case 5:
+    leds[70] = CRGB(0,0,0);    
+break;
+  case 6:
+    leds[70] = CRGB(0,0,0);     
+break;
+  case 7:
+    leds[70] = CRGB(0,0,0);    
+break;
+  case 8:
+    leds[70] = CRGB(0,0,0);                     
+break;
+  case 9:
+    leds[70] = CRGB(0,0,0);     
+break;
+  case 10:
+    leds[70] = CRGB(0,0,0);    
+break;  
+  case 11:
+    leds[70] = CRGB(0,0,0);     
+break;
+  case 12:
+    leds[70] = CRGB(0,0,0);                     
+break;
+  case 13:
+    leds[70] = CRGB(0,0,0);     
+break;
+  case 14:
+    leds[70] = CRGB(0,0,0); 
+break;  
+  case 15:
+    leds[70] = CRGB(0,0,0);     
+break;
+  case 16:
+    leds[70] = CRGB(0,0,0);                     
+break;
+  case 17:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[70] = CRGB(0,0,0);
+    
+break;
+  default:
+    leds[70] = CRGB::Black;
+ }
+ 
+ //-------------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}
+//----------------------------------
+
+//-------------------------------------------------------------------chest6A--//
+void chest6A(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (71,101) * 3 );
+
+  // increment the meteor display frame
+  idex++;
+
+  // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  }   
+  
+//--------------------------------
+
+switch ( idex ) {
+  case 0:
+    leds[71] = CRGB(200,100,100);
+    switch (idex){
+  case 0:
+    leds[87] = CRGB(200,100,100); 
+    } 
+break;
+  case 1:
+    leds[71] = CRGB(200,100,100);
+    switch (idex){
+  case 1:
+    leds[87] = CRGB(200,100,100); 
+    } 
+break;
+  case 2:
+    leds[71] = CRGB(200,100,100);
+    switch (idex){
+  case 2:
+    leds[87] = CRGB(200,100,100); 
+    } 
+break; 
+  case 3:
+    leds[71] = CRGB(200,100,100);
+    switch (idex){
+  case 3:
+    leds[87] = CRGB(200,100,100); 
+    }   
+break; 
+  case 4:
+    leds[71] = CRGB(150,75,75);
+    switch (idex){
+  case 4:
+    leds[87] = CRGB(150,75,75); 
+    } 
+break;
+  case 5:
+    leds[71] = CRGB(100,50,50);
+    switch (idex){
+  case 5:
+    leds[87] = CRGB(100,50,50); 
+    } 
+break; 
+  case 6:
+    leds[71] = CRGB(60,30,30);
+    switch (idex){
+  case 6:
+    leds[87] = CRGB(60,30,30); 
+    } 
+break;
+  case 7:
+    leds[71] = CRGB(20,10,10);
+    switch (idex){
+  case 7:
+    leds[87] = CRGB(20,10,10); 
+    }
+break;
+  case 8:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 8:
+    leds[87] = CRGB(0,0,0); 
+    }    
+break;
+  case 9:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 9:
+    leds[87] = CRGB(0,0,0); 
+    } 
+break;
+  case 10:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 10:
+    leds[87] = CRGB(0,0,0); 
+    }    
+break;
+  case 11:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 11:
+    leds[87] = CRGB(0,0,0); 
+    } 
+break;
+  case 12:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 12:
+    leds[87] = CRGB(0,0,0); 
+    }    
+break;
+  case 13:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 13:
+    leds[87] = CRGB(0,0,0); 
+    } 
+break;
+  case 14:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 14:
+    leds[87] = CRGB(0,0,0); 
+    }    
+break;
+  case 15:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 15:
+    leds[87] = CRGB(0,0,0); 
+    }
+break;
+  case 16:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 16:
+    leds[87] = CRGB(0,0,0); 
+    } 
+break;
+  case 17:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 17:
+    leds[87] = CRGB(0,0,0); 
+    }    
+break;
+  case 18:
+    leds[71] = CRGB(0,0,0);
+    switch (idex){
+  case 18:
+    leds[87] = CRGB(0,0,0); 
+    }                    
+break;
+ default:
+ leds[71] = CRGB::Black;
+ }    
+ 
+ 
+ //---------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}   
+
+
+
+
+
+//------------------------------------------------------------------throat7---//  
+void throat7(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (102,105) * 3 );
+
+  // increment the meteor display frame
+  idex++;
+ // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  } 
+  
+//--------------------------------
+
+ switch ( idex ) {
+  case 0:
+  delay (100);
+    leds[102] = CRGB(200,100,100); 
+ break;
+  case 1:
+    leds[102] = CRGB(150,75,75);    
+break;
+  case 2:
+    leds[102] = CRGB(100,50,50);    
+break;
+  case 3:
+    leds[102] = CRGB(60,30,30); 
+break;
+  case 4:
+    leds[102] = CRGB(20,10,10);    
+break;
+  case 5:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 6:
+    leds[102] = CRGB(100,50,50);   
+break;
+  case 7:
+    leds[102] = CRGB(150,75,75);    
+break;
+  case 8:
+    leds[102] = CRGB(200,100,100);
+break;
+  case 9:
+    leds[102] = CRGB(150,75,75);     
+break;
+  case 10:
+    leds[102] = CRGB(100,50,50);   
+break;
+  case 11:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 12:
+    leds[102] = CRGB(20,10,10);    
+break;
+  case 13:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 14:
+    leds[102] = CRGB(100,50,50);    
+break;
+  case 15:
+    leds[102] = CRGB(200,100,100);     
+break;
+  case 16:
+    leds[102] = CRGB(100,50,50);    
+break;
+  case 17:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 18:
+    leds[102] = CRGB(20,10,10);
+    
+break;
+ default:
+ leds[0] = CRGB::Black;
+ }
+ 
+ //----------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}   
+//---------------------------
+
+
+//---------------------------------------------------------------shoulder8A---//
+void shoulder8A(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (106,175) * 3 );
+
+  // increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+  
+  
+//-------------------------------
+
+ switch ( idex ) {
+  case 0:
+    leds[106] = CRGB(80,0,200);
+   switch (idex){
+  case 0:
+    leds[161] = CRGB(80,0,200); 
+    } 
+break;
+  case 1:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 1:
+    leds[161] = CRGB(80,0,200); 
+    } 
+break;
+  case 2:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 2:
+    leds[161] = CRGB(80,0,200); 
+    } 
+break; 
+  case 3:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 3:
+    leds[161] = CRGB(80,0,200); 
+    }   
+break; 
+  case 4:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 4:
+    leds[161] = CRGB(80,0,200); 
+    } 
+break;
+  case 5:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 5:
+    leds[161] = CRGB(80,0,200); 
+    } 
+break; 
+  case 6:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 6:
+    leds[161] = CRGB(80,0,200); 
+    } 
+break;
+  case 7:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 7:
+    leds[161] = CRGB(80,0,200); 
+    }
+break;
+  case 8:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 8:
+    leds[161] = CRGB(80,0,200); 
+    }    
+break;
+  case 9:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 9:
+    leds[161] = CRGB(80,0,200); 
+    } 
+break;
+  case 10:
+    leds[106] = CRGB(80,0,200);
+    switch (idex){
+  case 10:
+    leds[161] = CRGB(80,0,200); 
+    }    
+break;
+  case 11:
+    leds[106] = CRGB(60,0,150);
+    switch (idex){
+  case 11:
+    leds[161] = CRGB(60,0,150); 
+    } 
+break;
+  case 12:
+    leds[106] = CRGB(40,0,100);
+    switch (idex){
+  case 12:
+    leds[161] = CRGB(40,0,100); 
+    }    
+break;
+  case 13:
+    leds[106] = CRGB(24,0,60);
+    switch (idex){
+  case 13:
+    leds[161] = CRGB(24,0,60); 
+    } 
+break;
+  case 14:
+    leds[106] = CRGB(8,0,20);
+    switch (idex){
+  case 14:
+    leds[161] = CRGB(8,0,20); 
+    }    
+break;
+  case 15:
+    leds[106] = CRGB(0,0,0);
+    switch (idex){
+  case 15:
+    leds[161] = CRGB(0,0,0); 
+    }
+break;
+  case 16:
+    leds[106] = CRGB(0,0,0);
+    switch (idex){
+  case 16:
+    leds[161] = CRGB(0,0,0); 
+    } 
+break;
+  case 17:
+    leds[106] = CRGB(0,0,0);
+    switch (idex){
+  case 17:
+    leds[161] = CRGB(0,0,0); 
+    }    
+break;
+  case 18:
+    leds[106] = CRGB(0,0,0);
+    switch (idex){
+  case 18:
+    leds[161] = CRGB(0,0,0); 
+    }                    
+break;
+ default:
+ leds[106] = CRGB::Black;
+ }    
+ 
+  //---------------------------
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}    
+
+
+//----------------------------------------------------------------shoulder8B--//
+void shoulder8B(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (116,175) * 3 );
+
+  // increment the meteor display frame
+  idex++;
+ // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  } 
+  
+//-------------------------------
+
+ switch ( idex ) {
+  case 0:
+    leds[116] = CRGB(80,0,200);
+   switch (idex){
+  case 0:
+    leds[171] = CRGB(80,0,200); 
+    } 
+break; 
+  case 1:
+    leds[116] = CRGB(60,0,150);
+    switch (idex){
+  case 1:
+    leds[171] = CRGB(60,0,150); 
+    } 
+break;
+  case 2:
+    leds[116] = CRGB(40,0,100);
+    switch (idex){
+  case 2:
+    leds[171] = CRGB(40,0,100); 
+    } 
+break; 
+  case 3:
+    leds[116] = CRGB(24,0,60);
+    switch (idex){
+  case 3:
+    leds[171] = CRGB(24,0,60); 
+    } 
+break;
+  case 4:
+    leds[116] = CRGB(8,0,20);
+    switch (idex){
+  case 4:
+    leds[171] = CRGB(8,0,20); 
+    }
+break;
+  case 5:
+    leds[116] = CRGB(0,0,0);
+    switch (idex){
+  case 5:
+    leds[171] = CRGB(0,0,0); 
+    }    
+break;
+  case 6:
+    leds[116] = CRGB(0,0,0);
+    switch (idex){
+  case 6:
+    leds[171] = CRGB(0,0,0); 
+    }     
+break;
+  case 7:
+    leds[116] = CRGB(0,0,0);
+   switch (idex){
+  case 7:
+    leds[171] = CRGB(0,0,0); 
+    } 
+break; 
+  case 8:
+    leds[116] = CRGB(0,0,0);
+    switch (idex){
+  case 8:
+    leds[171] = CRGB(0,0,0); 
+    } 
+break;
+  case 9:
+    leds[116] = CRGB(80,0,200);
+    switch (idex){
+  case 9:
+    leds[171] = CRGB(80,0,200); 
+    } 
+break; 
+  case 10:
+    leds[116] = CRGB(40,0,100);
+    switch (idex){
+  case 10:
+    leds[171] = CRGB(40,0,100); 
+    } 
+break;
+  case 11:
+    leds[116] = CRGB(24,0,60);
+    switch (idex){
+  case 11:
+    leds[171] = CRGB(24,0,60); 
+    }
+break;
+  case 12:
+    leds[116] = CRGB(8,0,20);
+    switch (idex){
+  case 12:
+    leds[171] = CRGB(8,0,20); 
+    } 
+break;
+  case 13:
+    leds[116] = CRGB(0,0,0);
+    switch (idex){
+  case 13:
+    leds[171] = CRGB(0,0,0); 
+    } 
+break;    
+  case 14:
+    leds[116] = CRGB(0,0,0);
+   switch (idex){
+  case 14:
+    leds[171] = CRGB(0,0,0); 
+    } 
+break; 
+  case 15:
+    leds[116] = CRGB(0,0,0);
+    switch (idex){
+  case 15:
+    leds[171] = CRGB(0,0,0); 
+    } 
+break;
+  case 16:
+    leds[116] = CRGB(0,0,0);
+    switch (idex){
+  case 16:
+    leds[171] = CRGB(0,0,0); 
+    } 
+
+    
+break;
+ default:
+ leds[116] = CRGB::Black;
+ }    
+ 
+  //------------------------------
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}  
+
+//--------------------------------------------------------------------side9B--//
+void side9B(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (121,207) * 3 );
+
+  // increment the meteor display frame
+  idex++;
+  // make sure we don't drift into space
+ 
+//-------------------------------
+
+ switch ( idex ) {
+  case 0:
+    leds[121] = CRGB(80,0,200);
+   switch (idex){
+  case 0:
+    leds[176] = CRGB(80,0,200); 
+    } 
+break;
+  case 1:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 1:
+    leds[176] = CRGB(80,0,200); 
+    } 
+break;
+  case 2:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 2:
+    leds[176] = CRGB(80,0,200); 
+    } 
+break; 
+  case 3:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 3:
+    leds[176] = CRGB(80,0,200); 
+    }   
+break; 
+  case 4:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 4:
+    leds[176] = CRGB(80,0,200); 
+    } 
+break;
+  case 5:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 5:
+    leds[176] = CRGB(80,0,200); 
+    } 
+break; 
+  case 6:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 6:
+    leds[176] = CRGB(80,0,200); 
+    } 
+break;
+  case 7:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 7:
+    leds[176] = CRGB(80,0,200); 
+    }
+break;
+  case 8:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 8:
+    leds[176] = CRGB(80,0,200); 
+    }    
+break;
+  case 9:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 9:
+    leds[176] = CRGB(80,0,200); 
+    } 
+break;
+  case 10:
+    leds[121] = CRGB(80,0,200);
+    switch (idex){
+  case 10:
+    leds[176] = CRGB(80,0,200); 
+    }    
+break;
+  case 11:
+    leds[121] = CRGB(60,0,150);
+    switch (idex){
+  case 11:
+    leds[176] = CRGB(60,0,150); 
+    } 
+break;
+  case 12:
+    leds[121] = CRGB(40,0,100);
+    switch (idex){
+  case 12:
+    leds[176] = CRGB(40,0,100); 
+    }    
+break;
+  case 13:
+    leds[121] = CRGB(24,0,60);
+    switch (idex){
+  case 13:
+    leds[176] = CRGB(24,0,60); 
+    } 
+break;
+  case 14:
+    leds[121] = CRGB(8,0,20);
+    switch (idex){
+  case 14:
+    leds[176] = CRGB(8,0,20); 
+    }    
+break;
+  case 15:
+    leds[121] = CRGB(0,0,0);
+    switch (idex){
+  case 15:
+    leds[176] = CRGB(0,0,0); 
+    }
+break;
+  case 16:
+    leds[121] = CRGB(0,0,0);
+    switch (idex){
+  case 16:
+    leds[176] = CRGB(0,0,0); 
+    } 
+break;
+  case 17:
+    leds[121] = CRGB(0,0,0);
+    switch (idex){
+  case 17:
+    leds[176] = CRGB(0,0,0); 
+    }    
+break;
+  case 18:
+    leds[121] = CRGB(0,0,0);
+    switch (idex){
+  case 18:
+    leds[176] = CRGB(0,0,0); 
+    }                    
+break;
+ default:
+ leds[121] = CRGB::Black;
+ }    
+ 
+  //---------------------------
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+} 
+
+//------------------------------------------------------------------bottom10--//
+void bottom10(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (154,214) * 3 );
+
+  // increment the meteor display frame
+  idex++;
+// make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  }
+ 
+//--------------------------------
+
+switch ( idex ) {
+  case 0:
+    leds[154] = CRGB(80,0,200);
+    switch (idex){
+  case 0:
+    leds[208] = CRGB(80,0,200); 
+    } 
+break;
+  case 1:
+    leds[154] = CRGB(200,0,0);
+    switch (idex){
+  case 1:
+    leds[208] = CRGB(200,0,0); 
+    } 
+break;
+  case 2:
+    leds[154] = CRGB(80,0,200);
+    switch (idex){
+  case 2:
+    leds[208] = CRGB(80,0,200); 
+    } 
+break; 
+  case 3:
+    leds[154] = CRGB(200,0,0);
+    switch (idex){
+  case 3:
+    leds[208] = CRGB(200,0,0); 
+    }   
+break; 
+  case 4:
+    leds[154] = CRGB(80,0,200);
+    switch (idex){
+  case 4:
+    leds[208] = CRGB(80,0,200); 
+    } 
+break;
+  case 5:
+    leds[154] = CRGB(200,0,0);
+    switch (idex){
+  case 5:
+    leds[208] = CRGB(200,0,0); 
+    } 
+break; 
+  case 6:
+    leds[154] = CRGB(80,0,200);
+    switch (idex){
+  case 6:
+    leds[208] = CRGB(80,0,200); 
+    } 
+break;
+  case 7:
+    leds[154] = CRGB(200,0,0);
+    switch (idex){
+  case 7:
+    leds[208] = CRGB(200,0,0); 
+    }
+break;
+  case 8:
+    leds[154] = CRGB(80,0,200);
+    switch (idex){
+  case 8:
+    leds[208] = CRGB(80,0,200); 
+    }    
+break;
+  case 9:
+    leds[154] = CRGB(200,0,0);
+    switch (idex){
+  case 9:
+    leds[208] = CRGB(200,0,0); 
+    } 
+break;
+  case 10:
+    leds[154] = CRGB(80,0,200);
+    switch (idex){
+  case 10:
+    leds[208] = CRGB(80,0,200); 
+    }    
+break;
+  case 11:
+    leds[154] = CRGB(200,0,0);
+    switch (idex){
+  case 11:
+    leds[208] = CRGB(200,0,0); 
+    } 
+break;
+  case 12:
+    leds[154] = CRGB(0,0,0);
+    switch (idex){
+  case 12:
+    leds[208] = CRGB(0,0,0); 
+    }    
+break;
+  case 13:
+    leds[154] = CRGB(0,0,0);
+    switch (idex){
+  case 13:
+    leds[208] = CRGB(0,0,0); 
+    } 
+break;
+  case 14:
+    leds[154] = CRGB(0,0,0);
+    switch (idex){
+  case 14:
+    leds[208] = CRGB(0,0,0); 
+    }    
+break;
+  case 15:
+    leds[154] = CRGB(0,0,0);
+    switch (idex){
+  case 15:
+    leds[208] = CRGB(0,0,0); 
+    }
+break;
+  case 16:
+    leds[154] = CRGB(0,0,0);
+    switch (idex){
+  case 16:
+    leds[208] = CRGB(0,0,0); 
+    } 
+break;
+  case 17:
+    leds[154] = CRGB(0,0,0);
+    switch (idex){
+  case 17:
+    leds[208] = CRGB(0,0,0); 
+    }    
+break;
+  case 18:
+    leds[154] = CRGB(0,0,0);
+    switch (idex){
+  case 18:
+    leds[208] = CRGB(0,0,0); 
+    }                    
+break;
+ default:
+ leds[71] = CRGB::Black;
+ }    
+ 
+ 
+ //---------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(100);
+}   
+
+//------------------------------------------------------------------red11---//  
+void red11(){
+  // slide all the pixels down one in the array
+  memmove8( &leds[1], &leds[0], (0) * 3 );
+
+  // increment the meteor display frame
+  idex++;
+ // make sure we don't drift into space
+  if ( idex > meteorLength ) {
+    idex = 0;
+    // cycle through hues in each successive meteor tail
+    hue += 32;  
+  } 
+  
+//--------------------------------
+
+ switch ( idex ) {
+  case 0:
+  delay (100);
+    leds[0] = CRGB(200,0,0); 
+ break;
+  case 1:
+    leds[0] = CRGB(150,0,0);    
+break;
+  case 2:
+    leds[0] = CRGB(100,0,0);    
+break;
+  case 3:
+    leds[0] = CRGB(60,0,0); 
+break;
+  case 4:
+    leds[0] = CRGB(20,0,0);    
+break;
+  case 5:
+    leds[0] = CRGB(0,0,0);     
+break;
+  case 6:
+    leds[0] = CRGB(20,0,0);   
+break;
+  case 7:
+    leds[0] = CRGB(60,0,0);    
+break;
+  case 8:
+    leds[0] = CRGB(100,0,0);
+break;
+  case 9:
+    leds[0] = CRGB(150,0,0);     
+break;
+  case 10:
+    leds[0] = CRGB(200,0,0);   
+break;
+  case 11:
+    leds[0] = CRGB(150,0,0);     
+break;
+  case 12:
+    leds[0] = CRGB(100,0,0);    
+break;
+  case 13:
+    leds[0] = CRGB(60,0,0);     
+break;
+  case 14:
+    leds[0] = CRGB(20,0,0);    
+break;
+  case 15:
+    leds[0] = CRGB(60,0,0);     
+break;
+  case 16:
+    leds[0] = CRGB(100,0,0);    
+break;
+  case 17:
+    leds[0] = CRGB(150,0,0);     
+break;
+  case 18:
+    leds[0] = CRGB(200,0,0);
+    
+break;
+ default:
+ leds[0] = CRGB::Black;
+ }
+ 
+ //----------------------------
+   
+    // show the blinky
+  FastLED.show();  
+  // control the animation speed/frame rate
+  delay(120);
+}   
+//---------------------------
+
+
+//--------------------------------------------------------------FadetoBlack---//
+
+void fadeToBlack()
+{
+  fadeToBlackBy( leds, NUM_LEDS, 0);
+}
