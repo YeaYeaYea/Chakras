@@ -1,0 +1,1697 @@
+//----ChakrasTimeCodeFINAL------//
+//----------------------------------------------------------------------------//
+//--215 LED custom backing for milk plexi fiber optic art installation--------//
+//----------------------------------------------------------------------------//
+//--3.5 meters of WS2812B 60-LED/Meter pololu strip light---------------------//
+//----------------------------------------------------------------------------//
+//--Arduino Uno 1.6.2---------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//--Based in the FastLED3.1 library from  Mark Kriegsmann---------------------//
+//----------------------------------------------------------------------------//
+//--Setup with 'meteorShower' by Thomas Eldredge and variations from----------// 
+//--Jon Burroughs and Peter Routon--------------------------------------------//
+//--and Mark Kriegsmann's 'timecodePerformance'-------------------------------// 
+//----------------------------------------------------------------------------//
+
+
+#include "FastLED.h"
+ 
+#if FASTLED_VERSION < 3001000
+#error "Requires FastLED 3.1 or later; check github for latest code."
+#endif
+ 
+#define DATA_PIN    12
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
+#define NUM_LEDS    215
+CRGB leds[NUM_LEDS];
+ 
+#define BRIGHTNESS          96
+#define FRAMES_PER_SECOND  120
+ 
+uint8_t hue = 32;
+byte idex = 255;
+byte meteorLength = 18;
+
+void setup() {
+  delay(3000); // 3 second delay for recovery
+  
+  // tell FastLED about the LED strip configuration
+  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+ 
+  // set master brightness control
+  FastLED.setBrightness(BRIGHTNESS);
+  
+  RestartPerformance();
+  Serial.begin(57600);
+}
+ 
+ 
+uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+  
+uint32_t gTimeCodeBase = 0;
+uint32_t gTimeCode = 0;
+uint32_t gLastTimeCodeDoneAt = 0;
+uint32_t gLastTimeCodeDoneFrom = 0;
+ 
+#define TC(HOURS,MINUTES,SECONDS) \
+  ((uint32_t)(((uint32_t)((HOURS)*(uint32_t)(3600000))) + \
+  ((uint32_t)((MINUTES)*(uint32_t)(60000))) + \
+  ((uint32_t)((SECONDS)*(uint32_t)(1000)))))
+ 
+ 
+#define AT(HOURS,MINUTES,SECONDS) if( atTC(TC(HOURS,MINUTES,SECONDS)) )
+#define FROM(HOURS,MINUTES,SECONDS) if( fromTC(TC(HOURS,MINUTES,SECONDS)) )
+ 
+static bool atTC( uint32_t tc)
+{
+  bool maybe = false;
+  if( gTimeCode >= tc) {
+    if( gLastTimeCodeDoneAt < tc) {
+      maybe = true;
+      gLastTimeCodeDoneAt = tc;
+    }
+  }
+  return maybe;
+}
+ 
+static bool fromTC( uint32_t tc)
+{
+  bool maybe = false;
+  if( gTimeCode >= tc) {
+    if( gLastTimeCodeDoneFrom <= tc) {
+      maybe = true;
+      gLastTimeCodeDoneFrom = tc;
+    }
+  }
+  return maybe;
+}
+ 
+//--------------------Performance Order---------
+
+void Performance()
+{
+    AT (0,0,00.001) { FastLED.setBrightness(BRIGHTNESS); } 
+    FROM (0,0,00.100) {spiral1();     }
+    FROM (0,0,02.100) {spiral2();     }
+    FROM (0,0,04.600) {spiral3();     }
+    FROM (0,0,07.400) {spiral4();     }
+    FROM (0,0,11.400) {up5();         }
+    FROM (0,0,12.500) {down5();       }
+    FROM (0,0,13.200) {up5A();        }
+    FROM (0,0,14.000) {fadeToBlack1();}
+    FROM (0,0,15.100) {chest6A();     }
+    FROM (0,0,17.600) {throat7();     }
+    FROM (0,0,20.600) {shoulder8A();  }
+    FROM (0,0,24.100) {shoulder8B();  }
+    FROM (0,0,27.700) {fadeToBlack2();} 
+    FROM (0,0,27.900) {side9();      }
+    FROM (0,0,32.700) {bottom10();    }
+    FROM (0,0,35.100) {red11();       }
+    FROM (0,0,36.500) {fadeToBlack3(); }
+    FROM (0,0,36.800) {RestartPerformance(); }
+ 
+}
+
+//------------------Loop------------------------
+
+void loop()
+{
+     // Set the current timecode, based on when the performance started
+  gTimeCode = millis() - gTimeCodeBase;
+ 
+  Performance();
+ 
+  // send the 'leds' array out to the actual LED strip
+  FastLED.show();  
+  // insert a delay to keep the framerate modest
+  FastLED.delay(1000/FRAMES_PER_SECOND); 
+ 
+  // For demo purposes, restart the performance any time we read
+  // the letter "r" character from the serial port.  Type "r" into 
+  // the Arduino serial monitor and press return to restart the performance.
+  // In practice, you could have this check a 'restart' button, or something similar.
+  if( Serial.read() == 'r') RestartPerformance(); 
+  
+}
+  
+void RestartPerformance()
+{
+  gLastTimeCodeDoneAt = 0;
+  gLastTimeCodeDoneFrom = 0;
+  gTimeCodeBase = millis();
+}
+    
+//---------------------Events-----------//
+
+//-------------------------------------------------------------------spiral1--//
+void spiral1(){
+  memmove8( &leds[1], &leds[0], (0,17) * 3 );
+
+byte meteorLength = 30;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//----------------------------
+switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[0] = CRGB(20,0,0); 
+break;
+  case 1:
+    leds[0] = CRGB(60,0,0);    
+break;
+  case 2:
+    leds[0] = CRGB(100,0,0);    
+break;
+  case 3:
+    leds[0] = CRGB(150,0,0); 
+break;
+  case 4:
+    leds[0] = CRGB(200,0,0);    
+break;
+  case 5:
+    leds[0] = CRGB(200,0,0);     
+break;
+  case 6:
+    leds[0] = CRGB(200,0,0);   
+break;
+  case 7:
+    leds[0] = CRGB(200,0,0);    
+break;
+  case 8:
+    leds[0] = CRGB(200,0,0);
+break;
+  case 9:
+    leds[0] = CRGB(200,0,0);            
+break;
+  case 10:
+    leds[0] = CRGB(200,0,0);
+break;
+  case 11:
+    leds[0] = CRGB(150,0,0);     
+break;
+  case 12:
+    leds[0] = CRGB(100,0,0);    
+break;
+  case 13:
+    leds[0] = CRGB(60,0,0);     
+break;
+  case 14:
+    leds[0] = CRGB(20,0,0);    
+break;
+  case 15:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 16:
+    leds[0] = CRGB(0,0,0);   
+break;
+  case 17:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 18:
+    leds[0] = CRGB(0,0,0);
+break;
+  case 19:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 20:
+    leds[0] = CRGB(0,0,0);   
+break;
+  case 21:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 22:
+    leds[0] = CRGB(0,0,0);
+break;
+  case 23:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 24:
+    leds[0] = CRGB(0,0,0);   
+break;
+  case 25:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 26:
+    leds[0] = CRGB(0,0,0);
+break;
+  case 27:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 28:
+    leds[0] = CRGB(0,0,0);   
+break;
+  case 29:
+    leds[0] = CRGB(0,0,0); 
+break;
+  case 30:
+    leds[0] = CRGB(0,0,0);        
+break;
+ default:
+ leds[0] = CRGB::Black;
+ }
+ //---------------------------------
+  FastLED.show();  
+  delay(100);
+}
+//-------------------------------------------------------------------spiral2--//
+void spiral2(){
+  memmove8( &leds[1], &leds[0], (18,30) * 3 );
+
+byte meteorLength = 20;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//-------------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[18] = CRGB(20,0,0); 
+break;
+  case 1:
+    leds[18] = CRGB(60,0,0);    
+break;
+  case 2:
+    leds[18] = CRGB(100,0,0);    
+break;
+  case 3:
+    leds[18] = CRGB(150,0,0); 
+break;
+  case 4:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 5:
+    leds[18] = CRGB(200,0,0);     
+break;
+  case 6:
+    leds[18] = CRGB(200,0,0);   
+break;
+  case 7:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 8:
+    leds[18] = CRGB(200,0,0);      
+break;
+  case 9:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 10:
+    leds[18] = CRGB(200,0,0);     
+break;
+  case 11:
+    leds[18] = CRGB(200,0,0);    
+break;
+  case 12:
+    leds[18] = CRGB(150,0,0); 
+break;
+  case 13:
+    leds[18] = CRGB(60,0,0);
+break;
+  case 14:
+    leds[18] = CRGB(20,0,0);
+break;
+  case 15:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 16:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 17:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 19:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 20:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 21:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 22:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 23:
+    leds[18] = CRGB(0,0,0);
+break;
+  case 24:
+    leds[18] = CRGB(0,0,0);      
+break; 
+ default:
+ leds[0] = CRGB::Black;
+ } 
+ //------------------------------------
+  FastLED.show();  
+  delay(100);
+}
+ //-------------------------------------------------------------------spiral3-// 
+ void spiral3(){
+  memmove8( &leds[1], &leds[0], (31,47) * 3 );
+
+byte meteorLength = 22;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//--------------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[31] = CRGB(20,20,0);
+break;
+  case 1:
+    leds[31] = CRGB(60,60,0);     
+break;
+  case 2:
+    leds[31] = CRGB(100,100,0);    
+break;
+  case 3:
+    leds[31] = CRGB(150,100,0);     
+break;
+  case 4:
+    leds[31] = CRGB(200,100,0);    
+break;
+  case 5:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 6:
+    leds[31] = CRGB(200,100,0);    
+break;
+  case 7:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 8:
+    leds[31] = CRGB(200,100,0);    
+break;
+  case 9:
+    leds[31] = CRGB(200,100,0);     
+break;
+  case 10:
+    leds[31] = CRGB(200,100,0);                
+break;
+  case 11:
+    leds[31] = CRGB(150,75,0);     
+break;
+  case 12:
+    leds[31] = CRGB(100,50,0);    
+break;
+  case 13:
+    leds[31] = CRGB(60,30,0);     
+break;
+  case 14:
+    leds[31] = CRGB(20,10,0);
+break;
+  case 15:
+    leds[31] = CRGB(0,0,0);     
+break;
+  case 16:
+    leds[31] = CRGB(0,0,0); 
+break;
+  case 17:
+    leds[31] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[31] = CRGB(0,0,0);
+break;
+  case 19:
+    leds[31] = CRGB(0,0,0);     
+break;
+  case 20:
+    leds[31] = CRGB(0,0,0); 
+break;
+  case 21:
+    leds[31] = CRGB(0,0,0);
+break;
+  case 22:
+    leds[31] = CRGB(0,0,0);      
+break;
+  default:
+    leds[0] = CRGB::Black;
+ } 
+ //-------------------------------
+  FastLED.show();  
+  delay(100);
+}
+//-------------------------------------------------------------------spiral4--// 
+ void spiral4(){
+  memmove8( &leds[1], &leds[0], (48,61) * 3 );
+ 
+ byte meteorLength = 28;
+ 
+  idex++;
+  if ( idex > meteorLength) {
+    idex = 0;
+    hue += 32;  
+  }
+//-----------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[48] = CRGB(20,20,0);
+break;
+  case 1:
+    leds[48] = CRGB(60,60,0);     
+break;
+  case 2:
+    leds[48] = CRGB(100,100,0);    
+break;
+  case 3:
+    leds[48] = CRGB(150,150,0);                 
+break; 
+  case 4:
+    leds[48] = CRGB(200,200,0);    
+break;
+  case 5:
+    leds[48] = CRGB(200,200,0);    
+break;
+  case 6:
+    leds[48] = CRGB(200,200,0);     
+break;
+  case 7:
+    leds[48] = CRGB(200,200,0);       
+break;
+  case 8:
+    leds[48] = CRGB(200,200,0);
+break;
+  case 9:
+    leds[48] = CRGB(200,200,0);
+break;
+  case 10:
+    leds[48] = CRGB(150,150,0);
+break;
+  case 11:
+    leds[48] = CRGB(100,100,0);
+break;
+  case 12:
+    leds[48] = CRGB(60,60,0);
+break;
+  case 13:
+    leds[48] = CRGB(20,20,0);
+break;
+  case 14:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 15:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 16:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 17:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 18:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 19:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 20:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 21:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 22:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 23:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 24:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 25:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 26:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 27:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 28:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 29:
+    leds[48] = CRGB(0,0,0);
+break;
+  case 30:
+    leds[48] = CRGB(0,0,0);      
+break;
+  default:
+    leds[0] = CRGB::Black;
+ }
+ //---------------------------
+  FastLED.show();  
+  delay(100);
+}
+//-----------------------------------------------------------------------up5--// 
+ void up5(){
+  memmove8( &leds[1], &leds[0], (62,70) * 3 );
+
+byte meteorLength = 10;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//------------------------------
+ switch ( idex ) {
+  case 0:
+    leds[62] = CRGB(0,200,0);
+break;
+  case 1:
+    leds[62] = CRGB(0,200,0);     
+break;
+  case 2:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 3:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 4:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 5:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 6:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 7:
+    leds[62] = CRGB(0,0,0);
+break;   
+  case 8:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 9:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 10:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 11:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 12:
+    leds[62] = CRGB(0,0,0);        
+break;
+  default:
+    leds[62] = CRGB::Black;
+ }
+ //-------------------------------
+  FastLED.show();  
+  delay(100);
+}
+//---------------------------------------------------------------------down5--// 
+ void down5(){
+  memmove8( &leds[0], &leds[1], (62,70) * 3 );
+
+byte meteorLength = 6;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//------------------------------
+switch ( idex ) {
+  case 0:
+    leds[70] = CRGB(0,200,0);
+break;
+  case 1:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 2:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 3:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 4:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 5:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 6:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 7:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 8:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 9:
+    leds[70] = CRGB(0,0,0);
+break;
+  case 10:
+    leds[70] = CRGB(0,0,0);
+break;
+  default:
+    leds[70] = CRGB::Black;
+ }
+ //-------------------------------
+  FastLED.show();  
+  delay(100);
+}
+//----------------------------------------------------------------------up5A--// 
+ void up5A(){
+  memmove8( &leds[1], &leds[0], (62,70) * 3 );
+
+byte meteorLength = 6;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//------------------------------
+ switch ( idex ) {
+  case 0:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 1:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 2:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 3:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 4:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 5:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 6:
+    leds[62] = CRGB(0,0,0);    
+break;
+  case 7:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 8:
+    leds[62] = CRGB(0,0,0);
+break;
+  case 9:
+    leds[62] = CRGB(0,0,0);     
+break;
+  case 10:
+    leds[62] = CRGB(0,0,0);
+break;
+  default:
+    leds[62] = CRGB::Black;
+ }
+ //-------------------------------
+  FastLED.show();  
+  delay(100);
+}
+//-------------------------------------------------------------fadeToBlack1---// 
+ void fadeToBlack1(){   
+  fadeToBlackBy( leds, NUM_LEDS, (0,71)); 
+}
+//-------------------------------------------------------------------chest6A--//
+void chest6A(){
+  memmove8( &leds[72], &leds[71], (75-71) * 3 );
+  memmove8( &leds[88], &leds[87], (91-87) * 3 );
+  memmove8( &leds[77], &leds[76], (81-76) * 3 );
+  memmove8( &leds[93], &leds[92], (95-92) * 3 );
+  memmove8( &leds[83], &leds[82], (86-82) * 3 );
+  memmove8( &leds[97], &leds[96], (101-96) * 3 );
+ 
+  idex++;
+  byte meteorLength = 28;
+ if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  }  
+//-----------------------------------------------
+ switch ( idex ) {
+  delay (100);
+   case 0:
+    leds[71] = CRGB(200,100,100);
+    leds[87] = CRGB(200,100,100);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 1:
+    leds[71] = CRGB(200,100,100);
+    leds[87] = CRGB(200,100,100);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 2:
+    leds[71] = CRGB(200,100,100);
+    leds[87] = CRGB(200,100,100);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break; 
+  case 3:
+    leds[71] = CRGB(200,100,100);
+    leds[87] = CRGB(200,100,100);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);  
+break; 
+  case 4:
+    leds[71] = CRGB(200,100,100);
+    leds[87] = CRGB(200,100,100);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 5:
+    leds[71] = CRGB(200,100,100);
+    leds[87] = CRGB(200,100,100);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;  
+  case 6:
+    leds[71] = CRGB(150,75,75); 
+    leds[87] = CRGB(150,75,75);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;   
+  case 7:
+    leds[71] = CRGB(100,50,50);
+    leds[87] = CRGB(100,50,50);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0); 
+break;
+  case 8:
+    leds[71] = CRGB(60,30,30);
+    leds[87] = CRGB(60,30,30);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);    
+break;
+  case 9:
+    leds[71] = CRGB(20,10,10);
+    leds[87] = CRGB(20,10,10);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);  
+break;
+  case 10:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,200,0);
+    leds[92] = CRGB(0,200,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);    
+break;
+  case 11:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,200,0);
+    leds[92] = CRGB(0,200,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 12:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,200,0);
+    leds[92] = CRGB(0,200,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 13:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,200,0);
+    leds[92] = CRGB(0,200,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 14:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,150,0);
+    leds[92] = CRGB(0,150,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 15:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,100,0);
+    leds[92] = CRGB(0,100,0);
+    leds[82] = CRGB(0,0,200);
+    leds[96] = CRGB(0,0,200);    
+break;
+  case 16:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,60,0);
+    leds[92] = CRGB(0,60,0);
+    leds[82] = CRGB(0,0,200);
+    leds[96] = CRGB(0,0,200);
+break;
+  case 17:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,20,0);
+    leds[92] = CRGB(0,20,0);
+    leds[82] = CRGB(0,0,150);
+    leds[96] = CRGB(0,0,150);
+break;
+  case 18:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,100);
+    leds[96] = CRGB(0,0,100);
+break;
+  case 19:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,20);
+    leds[96] = CRGB(0,0,20);
+break;
+  case 20:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 21:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0); 
+break;
+  case 22:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 23:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 24:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);    
+break;
+  case 25:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 26:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 27:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);
+break;
+  case 28:
+    leds[71] = CRGB(0,0,0);
+    leds[87] = CRGB(0,0,0);
+    leds[76] = CRGB(0,0,0);
+    leds[92] = CRGB(0,0,0);
+    leds[82] = CRGB(0,0,0);
+    leds[96] = CRGB(0,0,0);                        
+break;
+ default:
+ leds[71] = CRGB::Black;
+ leds[87] = CRGB::Black;
+ }    
+//------------------------------
+  FastLED.show();  
+  delay(100);
+}   
+//------------------------------------------------------------------throat7---//  
+void throat7(){
+  memmove8( &leds[103], &leds[102], (105-102) * 3 );
+  
+  byte meteorLength = 24;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  }  
+//--------------------------------
+ switch ( idex ) {
+  case 0:
+  delay (100);
+    leds[102] = CRGB(200,100,100); 
+ break;
+  case 1:
+    leds[102] = CRGB(150,75,75);    
+break;
+  case 2:
+    leds[102] = CRGB(100,50,50);    
+break;
+  case 3:
+    leds[102] = CRGB(60,30,30); 
+break;
+  case 4:
+    leds[102] = CRGB(20,10,10);    
+break;
+  case 5:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 6:
+    leds[102] = CRGB(100,50,50);   
+break;
+  case 7:
+    leds[102] = CRGB(150,75,75);    
+break;
+  case 8:
+    leds[102] = CRGB(200,100,100);
+break;
+  case 9:
+    leds[102] = CRGB(150,75,75);     
+break;
+  case 10:
+    leds[102] = CRGB(100,50,50);   
+break;
+  case 11:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 12:
+    leds[102] = CRGB(20,10,10);    
+break;
+  case 13:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 14:
+    leds[102] = CRGB(100,50,50);    
+break;
+  case 15:
+    leds[102] = CRGB(200,100,100);     
+break;
+  case 16:
+    leds[102] = CRGB(100,50,50);    
+break;
+  case 17:
+    leds[102] = CRGB(60,30,30);     
+break;
+  case 18:
+    leds[102] = CRGB(20,10,10);
+break;
+  case 19:
+    leds[102] = CRGB(0,0,0); 
+break;
+  case 20:
+    leds[102] = CRGB(0,0,0);  
+break;
+  case 21:
+    leds[102] = CRGB(0,0,0); 
+break;
+  case 22:
+    leds[102] = CRGB(0,0,0);
+break;
+  case 23:
+    leds[102] = CRGB(0,0,0); 
+break;
+  case 24:
+    leds[102] = CRGB(0,0,0);     
+break;
+ default:
+ leds[0] = CRGB::Black;
+ } 
+ //----------------------------
+  FastLED.show();  
+  delay(100);
+}  
+//---------------------------------------------------------------shoulder8A---//
+void shoulder8A(){
+  memmove8( &leds[107], &leds[106], (120-106) * 3 );
+  memmove8( &leds[162], &leds[161], (175-161) * 3 );
+  
+byte meteorLength = 26;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//-------------------------------
+ switch ( idex ) {
+  case 0:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);      
+break;
+  case 1:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);     
+break;
+  case 2:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);     
+break; 
+  case 3:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);       
+break; 
+  case 4:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);      
+break;
+  case 5:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);      
+break; 
+  case 6:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);      
+break;
+  case 7:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);    
+break;
+  case 8:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);        
+break;
+  case 9:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);     
+break;
+  case 10:
+    leds[106] = CRGB(80,0,200);
+    leds[161] = CRGB(80,0,200);         
+break;
+  case 11:
+    leds[106] = CRGB(60,0,150);
+    leds[161] = CRGB(60,0,150);      
+break;
+  case 12:
+    leds[106] = CRGB(40,0,100);
+    leds[161] = CRGB(40,0,100);        
+break;
+  case 13:
+    leds[106] = CRGB(24,0,60);
+    leds[161] = CRGB(24,0,60);      
+break;
+  case 14:
+    leds[106] = CRGB(8,0,20);
+    leds[161] = CRGB(8,0,20);         
+break;
+  case 15:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);    
+break;
+  case 16:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);    
+break;
+  case 17:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);        
+break;
+  case 18:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0); 
+break;
+  case 19:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);     
+break;
+  case 20:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);      
+break;
+  case 21:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);         
+break;
+  case 22:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);
+break;
+  case 23:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);     
+break;
+  case 24:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);      
+break;
+  case 25:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);         
+break;
+  case 26:
+    leds[106] = CRGB(0,0,0);
+    leds[161] = CRGB(0,0,0);    
+break;
+ default:
+ leds[0] = CRGB::Black;
+ }    
+  //---------------------------
+  FastLED.show();  
+  delay(100);
+}    
+//----------------------------------------------------------------shoulder8B--//
+void shoulder8B(){
+  memmove8( &leds[117], &leds[116], (120-116) * 3 );
+  memmove8( &leds[172], &leds[171], (175-171) * 3 );
+  memmove8( &leds[122], &leds[121], (125-121) * 3 );
+  memmove8( &leds[177], &leds[176], (179-176) * 3 );
+  
+byte meteorLength = 10;  
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  }  
+//-------------------------------
+ switch ( idex ) {
+  case 0:
+    leds[116] = CRGB(80,0,200);
+    leds[171] = CRGB(80,0,200); 
+    leds[121] = CRGB(75,200,0);
+    leds[176] = CRGB(75,200,0);  
+break; 
+  case 1:
+    leds[116] = CRGB(60,0,150);
+    leds[171] = CRGB(60,0,150); 
+    leds[121] = CRGB(100,200,0);
+    leds[176] = CRGB(100,200,0);  
+break;
+  case 2:
+    leds[116] = CRGB(40,0,100);
+    leds[171] = CRGB(40,0,100); 
+    leds[121] = CRGB(140,200,0);
+    leds[176] = CRGB(140,200,0); 
+break; 
+  case 3:
+    leds[116] = CRGB(24,0,60);
+    leds[171] = CRGB(24,0,60); 
+    leds[121] = CRGB(180,200,0);
+    leds[176] = CRGB(180,200,0);   
+break;
+  case 4:
+    leds[116] = CRGB(8,0,20);
+    leds[171] = CRGB(8,0,20); 
+    leds[121] = CRGB(150,200,0);
+    leds[176] = CRGB(150,200,0);
+break;
+  case 5:
+    leds[116] = CRGB(0,0,0);
+    leds[171] = CRGB(0,0,0); 
+    leds[121] = CRGB(100,150,0);
+    leds[176] = CRGB(100,150,0);    
+break;
+  case 6:
+    leds[116] = CRGB(0,0,0);
+    leds[171] = CRGB(0,0,0); 
+    leds[121] = CRGB(20,100,0);
+    leds[176] = CRGB(20,100,0);     
+break;
+  case 7:
+    leds[116] = CRGB(0,0,0);
+    leds[171] = CRGB(0,0,0);  
+    leds[121] = CRGB(0,20,0);
+    leds[176] = CRGB(0,20,0); 
+break;
+  case 8:
+    leds[116] = CRGB(0,0,0);
+    leds[171] = CRGB(0,0,0); 
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);    
+break; 
+ default:
+ leds[116] = CRGB::Black;
+ leds[171] = CRGB::Black;
+ leds[121] = CRGB::Black;
+ leds[176] = CRGB::Black;
+ }    
+  //------------------------------
+  FastLED.show();  
+  delay(100);
+}  
+//-------------------------------------------------------------fadeToBlack2---// 
+ void fadeToBlack2(){  
+  fadeToBlackBy( leds, NUM_LEDS, (114,130));
+  fadeToBlackBy( leds, NUM_LEDS, (170,185));
+}
+//--------------------------------------------------------------------side9B--//
+void side9(){
+  memmove8( &leds[122], &leds[121], (153-121) * 3 );
+  memmove8( &leds[177], &leds[176], (207-176) * 3 );
+  
+ byte meteorLength = 48; 
+  
+  idex++;
+ if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 0;  
+  } 
+//-------------------------------
+ switch ( idex ) {
+  case 0:
+  delay(100);
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);      
+break;
+  case 1:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);      
+break;
+  case 2:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);      
+break; 
+  case 3:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);        
+break; 
+  case 4:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);      
+break;
+  case 5:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);      
+break; 
+  case 6:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);     
+break;
+  case 7:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);    
+break;
+  case 8:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);        
+break;
+  case 9:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);     
+break;
+  case 10:
+    leds[121] = CRGB(80,0,200);
+    leds[176] = CRGB(80,0,200);        
+break;
+  case 11:
+    leds[121] = CRGB(60,0,150);
+    leds[176] = CRGB(60,0,150);     
+break;
+  case 12:
+    leds[121] = CRGB(40,0,100);
+    leds[176] = CRGB(40,0,100);        
+break;
+  case 13:
+    leds[121] = CRGB(24,0,60);
+    leds[176] = CRGB(24,0,60);     
+break;
+  case 14:
+    leds[121] = CRGB(8,0,20);
+    leds[176] = CRGB(8,0,20);        
+break;
+  case 15:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);    
+break;
+  case 16:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);     
+break;
+  case 17:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);        
+break;
+  case 18:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0); 
+
+break;
+  case 19:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0); 
+    
+break;
+  case 20:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);     
+break;
+  case 21:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);        
+break;
+  case 22:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);
+break;
+  case 23:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);    
+break;
+  case 24:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);     
+break;
+  case 25:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 26:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0); 
+break;
+  case 27:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);     
+break;
+  case 28:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);      
+break;
+  case 29:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 30:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);
+break;
+  case 31:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 32:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);
+break;
+  case 33:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 34:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0); 
+
+break;
+  case 35:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);     
+break;
+  case 36:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);      
+break;
+  case 37:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 38:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);
+break;
+  case 39:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 40:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);  
+break;
+  case 41:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 42:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);
+break;
+  case 43:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 44:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);
+break;
+  case 45:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);         
+break;
+  case 46:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);   
+break;
+  case 47:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);        
+break;
+  case 48:
+    leds[121] = CRGB(0,0,0);
+    leds[176] = CRGB(0,0,0);   
+break;
+ default:
+ leds[121] = CRGB::Black;
+ leds[176] = CRGB::Black;
+ }    
+  //---------------------------
+  FastLED.show();  
+  delay(100);
+} 
+//------------------------------------------------------------------bottom10--//
+void bottom10(){
+  memmove8( &leds[155], &leds[154], (160-154) * 3 );
+  memmove8( &leds[209], &leds[208], (214-208) * 3 );
+
+byte meteorLength = 24;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  } 
+//--------------------------------
+switch ( idex ) {
+  case 0:
+    leds[154] = CRGB(80,0,200);
+    leds[208] = CRGB(80,0,200);     
+break;
+  case 1:
+    leds[154] = CRGB(200,0,0);
+    leds[208] = CRGB(200,0,0);     
+break;
+  case 2:
+    leds[154] = CRGB(80,0,200);
+    leds[208] = CRGB(80,0,200);      
+break; 
+  case 3:
+    leds[154] = CRGB(200,0,0);
+    leds[208] = CRGB(200,0,0);       
+break; 
+  case 4:
+    leds[154] = CRGB(80,0,200);
+    leds[208] = CRGB(80,0,200);      
+break;
+  case 5:
+    leds[154] = CRGB(200,0,0);
+    leds[208] = CRGB(200,0,0);      
+break; 
+  case 6:
+    leds[154] = CRGB(80,0,200);
+    leds[208] = CRGB(80,0,200);      
+break;
+  case 7:
+    leds[154] = CRGB(200,0,0);
+    leds[208] = CRGB(200,0,0);    
+break;
+  case 8:
+    leds[154] = CRGB(80,0,200);
+    leds[208] = CRGB(80,0,200);         
+break;
+  case 9:
+    leds[154] = CRGB(200,0,0);
+    leds[208] = CRGB(200,0,0);      
+break;
+  case 10:
+    leds[154] = CRGB(80,0,200);
+    leds[208] = CRGB(80,0,200);         
+break;
+  case 11:
+    leds[154] = CRGB(200,0,0);
+    leds[208] = CRGB(200,0,0);      
+break;
+  case 12:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);         
+break;
+  case 13:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);      
+break;
+  case 14:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);         
+break;
+  case 15:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);     
+break;
+  case 16:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);      
+break;
+  case 17:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);         
+break;
+  case 18:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0); 
+break;
+  case 19:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);     
+break;
+  case 20:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);         
+break;
+  case 21:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);    
+break;
+  case 22:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0); 
+break;
+  case 23:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);         
+break;
+  case 24:
+    leds[154] = CRGB(0,0,0);
+    leds[208] = CRGB(0,0,0);                        
+break;
+ default:
+ leds[154] = CRGB::Black;
+ leds[208] = CRGB::Black;
+ }    
+ //---------------------------
+  FastLED.show();  
+  delay(100);
+}   
+//------------------------------------------------------------------red11---//  
+void red11(){
+  memmove8( &leds[1], &leds[0], (0) * 3 );
+
+byte meteorLength = 10;
+
+  idex++;
+  if ( idex > meteorLength ) {
+    idex = 0;
+    hue += 32;  
+  }   
+//--------------------------------
+ switch ( idex ) {
+  case 0:
+  delay (100);
+    leds[0] = CRGB(200,0,0); 
+ break;
+  case 1:
+    leds[0] = CRGB(150,0,0);    
+break;
+  case 2:
+    leds[0] = CRGB(100,0,0);    
+break;
+  case 3:
+    leds[0] = CRGB(60,0,0); 
+break;
+  case 4:
+    leds[0] = CRGB(20,0,0);    
+break;
+  case 5:
+    leds[0] = CRGB(0,0,0);     
+break;
+  case 6:
+    leds[0] = CRGB(20,0,0);   
+break;
+  case 7:
+    leds[0] = CRGB(60,0,0);    
+break;
+  case 8:
+    leds[0] = CRGB(100,0,0);
+break;
+  case 9:
+    leds[0] = CRGB(150,0,0);     
+break;
+ default:
+ leds[0] = CRGB::Black;
+ }
+ //----------------------------  
+  FastLED.show();  
+  delay(120);
+}   
+//--------------------------------------------------------------FadetoBlack---//
+void fadeToBlack3(){
+  fadeToBlackBy( leds, NUM_LEDS, (101,214));
+}
